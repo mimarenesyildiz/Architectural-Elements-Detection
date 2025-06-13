@@ -10,27 +10,37 @@ print("=" * 50)
 ROOT_DIR = os.path.abspath("C:/ArchitecturalElementsDetection")
 print(f"ROOT_DIR: {ROOT_DIR}")
 
-# Check TensorFlow installation
+# Check PyTorch installation
 try:
-    import tensorflow as tf
-    print(f"✅ TensorFlow version: {tf.__version__}")
+    import torch
+    print(f"✅ PyTorch version: {torch.__version__}")
     
-    # Suppress TensorFlow warnings
-    import logging
-    logging.getLogger('tensorflow').setLevel(logging.ERROR)
-    
-    # Set memory growth for GPU (if available)
-    physical_devices = tf.config.list_physical_devices('GPU')
-    if physical_devices:
-        tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        print(f"✅ GPU found: {physical_devices[0]}")
+    # Check GPU availability
+    if torch.cuda.is_available():
+        print(f"✅ CUDA GPU found: {torch.cuda.get_device_name(0)}")
+        print(f"   CUDA version: {torch.version.cuda}")
     else:
-        print("ℹ️ No GPU found, using CPU")
+        print("ℹ️ No CUDA GPU found, using CPU")
         
 except ImportError as e:
-    print(f"❌ TensorFlow import failed: {e}")
-    print("Please install TensorFlow:")
-    print("  pip install tensorflow==2.8.0")
+    print(f"❌ PyTorch import failed: {e}")
+    print("Please install PyTorch:")
+    print("  pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu")
+    input("Press Enter to exit...")
+    sys.exit(1)
+
+# Check Detectron2 installation
+try:
+    import detectron2
+    from detectron2 import model_zoo
+    from detectron2.engine import DefaultPredictor
+    from detectron2.config import get_cfg
+    print(f"✅ Detectron2 version: {detectron2.__version__}")
+    print("✅ Detectron2 imported successfully")
+except ImportError as e:
+    print(f"❌ Detectron2 import failed: {e}")
+    print("Please install Detectron2:")
+    print("  pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch2.0/index.html")
     input("Press Enter to exit...")
     sys.exit(1)
 
@@ -39,7 +49,7 @@ try:
     import matplotlib
     matplotlib.use('Agg')  # Use non-interactive backend
     import matplotlib.pyplot as plt
-    import skimage.io
+    import cv2
     from PIL import Image
     print("✅ Other packages imported successfully")
 except ImportError as e:
@@ -87,7 +97,7 @@ if len(image_files) == 0:
 print(f"\n{'=' * 50}")
 print("PROCESSING COMPLETED - DEMO MODE")
 print("Images found and ready for processing.")
-print("TensorFlow 2.8.0 is working correctly!")
+print("PyTorch + Detectron2 is working correctly!")
 print(f"{'=' * 50}")
 print("\nPress Enter to exit...")
 input()
