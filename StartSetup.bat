@@ -47,12 +47,12 @@ IF ERRORLEVEL 1 (
 echo Virtual environment activated successfully!
 echo.
 
-echo Checking Python version (should be 3.8.x)...
+echo Checking Python version (should be 3.9.x)...
 python --version
 echo.
 
 echo Checking required packages...
-python -c "import tensorflow as tf; print('TensorFlow version:', tf.__version__)"
+python -c "import torch; print('PyTorch version:', torch.__version__)"
 echo.
 
 echo Starting MaskRCNN detection...
