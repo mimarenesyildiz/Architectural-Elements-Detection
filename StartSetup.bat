@@ -1,6 +1,6 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
-SET "ENV_NAME=MaskRCNN_Detection2"
+SET "ENV_NAME=MaskRCNN_Detection"
 SET "PYTHON_VERSION=3.6"
 SET "LOG_FILE=%~dp0setup_log.txt"
 REM Script path will be determined automatically
@@ -309,7 +309,7 @@ echo ====================================
 REM Activate environment
 CALL "%CONDA_PATH%\condabin\conda.bat" activate %ENV_NAME%
 
-REM Find StartMasksDetection.py script automatically
+REM Find StartMasksDetection.py script in the same directory as batch file
 SET "SCRIPT_PATH="
 
 echo Searching for StartMasksDetection.py...
@@ -325,61 +325,13 @@ if exist "%BATCH_DIR%StartMasksDetection.py" (
     goto :run_script
 )
 
-REM Check in common project locations
-echo Checking: %BATCH_DIR%src\StartMasksDetection.py
-if exist "%BATCH_DIR%src\StartMasksDetection.py" (
-    SET "SCRIPT_PATH=%BATCH_DIR%src\StartMasksDetection.py"
-    echo FOUND: %SCRIPT_PATH%
-    goto :run_script
-)
-
-echo Checking: %BATCH_DIR%scripts\StartMasksDetection.py
-if exist "%BATCH_DIR%scripts\StartMasksDetection.py" (
-    SET "SCRIPT_PATH=%BATCH_DIR%scripts\StartMasksDetection.py"
-    echo FOUND: %SCRIPT_PATH%
-    goto :run_script
-)
-
-echo Checking: C:\Users\%USERNAME%\PycharmProjects\Mask_RCNN-Multi-Class-Detection\StartMasksDetection.py
-if exist "C:\Users\%USERNAME%\PycharmProjects\Mask_RCNN-Multi-Class-Detection\StartMasksDetection.py" (
-    SET "SCRIPT_PATH=C:\Users\%USERNAME%\PycharmProjects\Mask_RCNN-Multi-Class-Detection\StartMasksDetection.py"
-    echo FOUND: %SCRIPT_PATH%
-    goto :run_script
-)
-
-REM Search in current directory and subdirectories
-echo Searching in current directory and subdirectories...
-for /r "%BATCH_DIR%" %%f in (StartMasksDetection.py) do (
-    if exist "%%f" (
-        SET "SCRIPT_PATH=%%f"
-        echo FOUND: %%f
-        goto :run_script
-    )
-)
-
-REM If still not found, search in common Python project locations
-echo Searching in common Python project locations...
-for /d %%d in ("C:\Users\%USERNAME%\PycharmProjects\*") do (
-    if exist "%%d\StartMasksDetection.py" (
-        SET "SCRIPT_PATH=%%d\StartMasksDetection.py"
-        echo FOUND: %%d\StartMasksDetection.py
-        goto :run_script
-    )
-)
-
 echo ====================================
 echo ERROR: StartMasksDetection.py not found!
 echo ====================================
-echo Searched locations:
+echo Searched location:
 echo - Batch file directory: %BATCH_DIR%
-echo - %BATCH_DIR%src\
-echo - %BATCH_DIR%scripts\
-echo - C:\Users\%USERNAME%\PycharmProjects\Mask_RCNN-Multi-Class-Detection\
-echo - All subdirectories of batch file location
-echo - All PycharmProjects subdirectories
 echo.
-echo Please ensure StartMasksDetection.py exists in one of these locations or
-echo place the StartMasksDetection.py file in the same directory as this batch file.
+echo Please place the StartMasksDetection.py file in the same directory as this batch file.
 echo.
 pause
 exit /b 1
