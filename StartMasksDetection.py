@@ -369,6 +369,26 @@ def main():
                 results = model.detect([image], verbose=0)[0]
                 detection_time = time.time() - detection_start
                 
+                # MANUEL CONFIDENCE FILTERING - 0.455'lik detection'ı elemek için
+                if 'scores' in results and len(results['scores']) > 0:
+                    confidence_threshold = 0.600  # Manuel threshold
+                    valid_indices = results['scores'] >= confidence_threshold
+                    
+                    print(f"🔍 Original detections: {len(results['scores'])}")
+                    print(f"🔍 Original scores: {results['scores']}")
+                    print(f"🔍 Valid indices: {valid_indices}")
+                    
+                    # Filter all results arrays
+                    results['scores'] = results['scores'][valid_indices]
+                    results['class_ids'] = results['class_ids'][valid_indices]
+                    results['rois'] = results['rois'][valid_indices]
+                    
+                    if 'masks' in results and len(results['masks'].shape) == 3:
+                        results['masks'] = results['masks'][:, :, valid_indices]
+                    
+                    print(f"🔍 Filtered detections: {len(results['scores'])}")
+                    print(f"🔍 Filtered scores: {results['scores']}")
+                
                 logger.info(f'Detected {len(results["class_ids"])} objects in {detection_time:.2f}s')
                 print(f'  🎯 Detected {len(results["class_ids"])} objects in {detection_time:.2f}s')
                 
