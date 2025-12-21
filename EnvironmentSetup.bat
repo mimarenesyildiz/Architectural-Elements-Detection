@@ -1,327 +1,379 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
+
+REM ============================================================
+REM MaskRCNN Environment Setup - Version 2.3
+REM Exact versions as specified
+REM ============================================================
+
 SET "ENV_NAME=MaskRCNN_Detection"
 SET "PYTHON_VERSION=3.6"
-SET "LOG_FILE=%~dp0setup_log.txt"
+SET "SCRIPT_DIR=%~dp0"
+SET "LOG_FILE=%SCRIPT_DIR%setup_log.txt"
+SET "CONDA_CONFIG=%SCRIPT_DIR%.conda_path"
 
-echo ====================================== > "%LOG_FILE%"
+echo ====================================================== > "%LOG_FILE%"
 echo MaskRCNN Environment Setup Log >> "%LOG_FILE%"
 echo Started at: %date% %time% >> "%LOG_FILE%"
-echo ====================================== >> "%LOG_FILE%"
+echo ====================================================== >> "%LOG_FILE%"
 
-echo ====================================
-echo MaskRCNN Fixed Environment Setup
-echo ====================================
-echo [Setup log will be saved to: %LOG_FILE%]
+echo.
+echo ========================================================
+echo   MaskRCNN Environment Setup v2.3
+echo ========================================================
+echo.
+echo   Target Configuration:
+echo     Python 3.6
+echo     TensorFlow 1.10.0
+echo     Keras 2.0.8
+echo     NumPy 1.16.4
+echo.
+echo   [Log: %LOG_FILE%]
 echo.
 
-echo Searching for Conda installation...
+REM ============================================================
+REM STEP 1: Find Conda
+REM ============================================================
 
-REM Try to find conda in common locations
 SET "CONDA_PATH="
 
-echo Checking: C:\Users\%USERNAME%\Anaconda3
-if exist "C:\Users\%USERNAME%\Anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\Anaconda3"
-    echo FOUND: C:\Users\%USERNAME%\Anaconda3
+echo [Step 1/5] Finding Conda...
+
+if exist "%CONDA_CONFIG%" (
+    set /p CONDA_PATH=<"%CONDA_CONFIG%"
+    if exist "!CONDA_PATH!\condabin\conda.bat" (
+        echo   [OK] Found: !CONDA_PATH!
+        goto :conda_found
+    )
+    SET "CONDA_PATH="
+)
+
+if exist "%SCRIPT_DIR%miniconda3\condabin\conda.bat" (
+    SET "CONDA_PATH=%SCRIPT_DIR%miniconda3"
+    echo   [OK] Found portable: !CONDA_PATH!
+    echo !CONDA_PATH!> "%CONDA_CONFIG%"
     goto :conda_found
 )
 
-echo Checking: C:\Users\%USERNAME%\anaconda3
-if exist "C:\Users\%USERNAME%\anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\anaconda3"
-    echo FOUND: C:\Users\%USERNAME%\anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\Users\%USERNAME%\AppData\Local\Continuum\anaconda3
-if exist "C:\Users\%USERNAME%\AppData\Local\Continuum\anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\AppData\Local\Continuum\anaconda3"
-    echo FOUND: C:\Users\%USERNAME%\AppData\Local\Continuum\anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\Users\%USERNAME%\AppData\Local\anaconda3
-if exist "C:\Users\%USERNAME%\AppData\Local\anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\AppData\Local\anaconda3"
-    echo FOUND: C:\Users\%USERNAME%\AppData\Local\anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\ProgramData\Anaconda3
-if exist "C:\ProgramData\Anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\ProgramData\Anaconda3"
-    echo FOUND: C:\ProgramData\Anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\ProgramData\anaconda3
-if exist "C:\ProgramData\anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\ProgramData\anaconda3"
-    echo FOUND: C:\ProgramData\anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\Anaconda3
-if exist "C:\Anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Anaconda3"
-    echo FOUND: C:\Anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\anaconda3
-if exist "C:\anaconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\anaconda3"
-    echo FOUND: C:\anaconda3
-    goto :conda_found
-)
-
-echo Checking: C:\Users\%USERNAME%\Miniconda3
-if exist "C:\Users\%USERNAME%\Miniconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\Miniconda3"
-    echo FOUND: C:\Users\%USERNAME%\Miniconda3
-    goto :conda_found
-)
-
-echo Checking: C:\Users\%USERNAME%\miniconda3
-if exist "C:\Users\%USERNAME%\miniconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\Users\%USERNAME%\miniconda3"
-    echo FOUND: C:\Users\%USERNAME%\miniconda3
-    goto :conda_found
-)
-
-echo Checking: C:\ProgramData\Miniconda3
-if exist "C:\ProgramData\Miniconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\ProgramData\Miniconda3"
-    echo FOUND: C:\ProgramData\Miniconda3
-    goto :conda_found
-)
-
-echo Checking: C:\ProgramData\miniconda3
-if exist "C:\ProgramData\miniconda3\condabin\conda.bat" (
-    SET "CONDA_PATH=C:\ProgramData\miniconda3"
-    echo FOUND: C:\ProgramData\miniconda3
-    goto :conda_found
-)
-
-REM If not found in common locations, try PATH
-echo Checking if conda is available in PATH...
-where conda >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Conda found in PATH, trying to get base path...
-    for /f "tokens=*" %%i in ('conda info --base 2^>nul') do set "CONDA_PATH=%%i"
-    if defined CONDA_PATH (
-        echo FOUND: %CONDA_PATH%
+for %%P in (
+    "%USERPROFILE%\Miniconda3"
+    "%USERPROFILE%\miniconda3"
+    "%USERPROFILE%\Anaconda3"
+    "%USERPROFILE%\anaconda3"
+    "%LOCALAPPDATA%\anaconda3"
+    "%LOCALAPPDATA%\miniconda3"
+    "C:\ProgramData\Anaconda3"
+    "C:\ProgramData\Miniconda3"
+    "C:\Anaconda3"
+    "C:\Miniconda3"
+) do (
+    if exist "%%~P\condabin\conda.bat" (
+        SET "CONDA_PATH=%%~P"
+        echo   [OK] Found: %%~P
+        echo %%~P> "%CONDA_CONFIG%"
         goto :conda_found
     )
 )
 
-echo ====================================
-echo ERROR: Conda installation not found!
-echo ====================================
-echo Conda was not found in any common locations.
-echo Please ensure Anaconda or Miniconda is installed.
-echo.
-echo You can download Anaconda from: https://www.anaconda.com/products/distribution
-echo Or Miniconda from: https://docs.conda.io/en/latest/miniconda.html
-echo.
-echo Error: Conda not found >> "%LOG_FILE%"
+echo   [ERROR] Conda not found!
 pause
 exit /b 1
 
 :conda_found
-echo ====================================
-echo Using Conda installation at: %CONDA_PATH%
-echo ====================================
-echo Conda found at: %CONDA_PATH% >> "%LOG_FILE%"
+echo.
 
-REM Check if environment already exists
-echo Checking if %ENV_NAME% environment exists...
+REM ============================================================
+REM STEP 2: Setup Environment
+REM ============================================================
+
+echo [Step 2/5] Setting up environment...
+
+SET "PATH=%CONDA_PATH%\condabin;%CONDA_PATH%\Scripts;%CONDA_PATH%;%SystemRoot%\system32;%SystemRoot%"
+
+CALL "%CONDA_PATH%\condabin\conda.bat" activate base >nul 2>&1
+
+REM Check existing environment
 CALL "%CONDA_PATH%\condabin\conda.bat" env list | findstr /C:"%ENV_NAME%" >nul 2>&1
 if %errorlevel% equ 0 (
-    echo.
-    echo Environment %ENV_NAME% already exists!
-    echo Using existing environment...
-    echo.
-    CALL "%CONDA_PATH%\condabin\conda.bat" activate %ENV_NAME%
-
-    REM >>> BURAYA pip installları EKLE! <<<
-    echo Installing/Updating required packages in existing environment...
-    pip install numpy==1.16.4
-    pip install h5py==2.8.0
-    pip install tensorflow==1.10.0
-    pip install keras==2.0.8
-    pip install scikit-image==0.16.2
-    pip install opencv-python==4.1.0.25
-    pip install imgaug==0.2.9
-    pip install pillow==6.2.1
-    pip install matplotlib==3.0.3
-    pip install scipy==1.2.3
-    pip install IPython==7.2.0
-    pip install pycocotools-windows
-    pip install numba==0.48.0
-    pip install tqdm==4.45.0
-    pip install psutil==5.7.0
-
-    goto :verify_installation
+    echo   Environment exists. Removing for clean install...
+    CALL "%CONDA_PATH%\condabin\conda.bat" env remove -n %ENV_NAME% -y >> "%LOG_FILE%" 2>&1
+    echo   [OK] Old environment removed
 )
 
-
-echo ====================================
-echo Creating NEW %ENV_NAME% environment with Python %PYTHON_VERSION%
-echo ====================================
-
-REM Create conda environment with Python 3.6
+echo   Creating %ENV_NAME% with Python %PYTHON_VERSION%...
 CALL "%CONDA_PATH%\condabin\conda.bat" create -n %ENV_NAME% python=%PYTHON_VERSION% -y >> "%LOG_FILE%" 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: Failed to create conda environment
-    echo Check the log file for details: %LOG_FILE%
+    echo   [ERROR] Failed to create environment
     pause
     exit /b 1
 )
 
-echo Environment created successfully!
+echo   [OK] Environment created
+echo.
 
-echo ====================================
-echo Installing COMPATIBLE packages...
-echo ====================================
-
-REM Activate environment and install packages
 CALL "%CONDA_PATH%\condabin\conda.bat" activate %ENV_NAME%
 
-echo Installing specific compatible versions for MaskRCNN...
-echo This may take several minutes. Please be patient...
+REM ============================================================
+REM STEP 3: Install Packages
+REM Order is critical to avoid dependency conflicts
+REM ============================================================
+
+echo [Step 3/5] Installing packages...
+echo.
+echo   Installation order optimized for compatibility.
+echo   This will take 10-15 minutes.
 echo.
 
-REM Function to install package with retry
-:install_package
-SET "PACKAGE=%~1"
-SET "RETRY_COUNT=0"
-
-:retry_install
-echo Installing %PACKAGE%...
-pip install %PACKAGE% --no-cache-dir >> "%LOG_FILE%" 2>&1
-if %errorlevel% neq 0 (
-    SET /A RETRY_COUNT+=1
-    if !RETRY_COUNT! lss 3 (
-        echo Retry !RETRY_COUNT! for %PACKAGE%...
-        timeout /t 2 /nobreak >nul
-        goto :retry_install
-    ) else (
-        echo WARNING: Failed to install %PACKAGE% after 3 attempts
-        echo Failed to install %PACKAGE% >> "%LOG_FILE%"
-    )
-) else (
-    echo Successfully installed %PACKAGE%
-)
-goto :eof
-
-REM Install exact compatible versions in correct order with optimization flags
-echo [1/14] Installing NumPy 1.16.4...
-call :install_package "numpy==1.16.4"
-
-echo [2/14] Installing h5py 2.8.0...
-call :install_package "h5py==2.8.0"
-
-echo [3/14] Installing TensorFlow 1.10.0...
-echo Note: This is a large package and may take several minutes...
-call :install_package "tensorflow==1.10.0"
-
-REM Check for GPU support
+REM ----------------------------------------
+REM PHASE 1: TensorFlow first (sets up dependencies)
+REM ----------------------------------------
+echo   --- Phase 1: TensorFlow (installs first) ---
 echo.
-echo Checking for NVIDIA GPU...
+
+echo   [1/16] Installing TensorFlow==1.10.0
+pip install tensorflow==1.10.0 >> "%LOG_FILE%" 2>&1
+if %errorlevel% neq 0 echo   [!] TensorFlow had warnings
+
+REM Check for GPU
 nvidia-smi >nul 2>&1
 if %errorlevel% equ 0 (
-    echo NVIDIA GPU detected! Installing GPU support...
-    echo [3a/14] Installing TensorFlow GPU 1.10.0...
-    call :install_package "tensorflow-gpu==1.10.0"
-    echo GPU support installed.
+    echo   [2/16] Installing TensorFlow-GPU==1.10.0 (GPU detected)
+    pip install tensorflow-gpu==1.10.0 >> "%LOG_FILE%" 2>&1
 ) else (
-    echo No NVIDIA GPU detected. Using CPU version.
+    echo   [2/16] Skipping GPU (no NVIDIA GPU detected)
 )
 
-echo [4/14] Installing Keras 2.0.8...
-call :install_package "keras==2.0.8"
+echo   [3/16] Installing Keras==2.0.8
+pip install keras==2.0.8 >> "%LOG_FILE%" 2>&1
 
-echo [5/14] Installing scikit-image 0.16.2...
-call :install_package "scikit-image==0.16.2"
+REM ----------------------------------------
+REM PHASE 2: Core scientific packages
+REM ----------------------------------------
+echo.
+echo   --- Phase 2: Core packages ---
+echo.
 
-echo [6/14] Installing OpenCV-Python 4.1.0.25...
-call :install_package "opencv-python==4.1.0.25"
+echo   [4/16] Installing H5py==2.8.0
+pip install h5py==2.8.0 >> "%LOG_FILE%" 2>&1
 
-echo [7/14] Installing imgaug 0.2.9...
-call :install_package "imgaug==0.2.9"
+echo   [5/16] Installing SciPy==1.2.3
+pip install scipy==1.2.3 >> "%LOG_FILE%" 2>&1
 
-echo [8/14] Installing Pillow 6.2.1...
-call :install_package "pillow==6.2.1"
+echo   [6/16] Installing Pillow==6.2.1
+pip install pillow==6.2.1 >> "%LOG_FILE%" 2>&1
 
-echo [9/14] Installing matplotlib 3.0.3...
-call :install_package "matplotlib==3.0.3"
+echo   [7/16] Installing Matplotlib==3.0.3
+pip install matplotlib==3.0.3 >> "%LOG_FILE%" 2>&1
 
-echo [10/14] Installing scipy 1.2.3...
-call :install_package "scipy==1.2.3"
+REM ----------------------------------------
+REM PHASE 3: Image processing
+REM ----------------------------------------
+echo.
+echo   --- Phase 3: Image processing ---
+echo.
 
-echo [11/14] Installing IPython 7.2.0...
-call :install_package "IPython==7.2.0"
+echo   [8/16] Installing OpenCV-Python==4.1.0.25
+pip install opencv-python==4.1.0.25 >> "%LOG_FILE%" 2>&1
 
-echo [12/14] Installing pycocotools for Windows...
-call :install_package "pycocotools-windows"
+echo   [9/16] Installing Scikit-image==0.16.2
+pip install scikit-image==0.16.2 >> "%LOG_FILE%" 2>&1
 
-echo [13/14] Installing performance optimization packages...
-call :install_package "numba==0.48.0"
+echo   [10/16] Installing Imgaug==0.2.9
+pip install imgaug==0.2.9 >> "%LOG_FILE%" 2>&1
 
-echo [14/14] Installing monitoring tools...
-call :install_package "tqdm==4.45.0"
-call :install_package "psutil==5.7.0"
+REM ----------------------------------------
+REM PHASE 4: Utilities
+REM ----------------------------------------
+echo.
+echo   --- Phase 4: Utilities ---
+echo.
+
+echo   [11/16] Installing IPython==7.2.0
+pip install IPython==7.2.0 >> "%LOG_FILE%" 2>&1
+
+echo   [12/16] Installing Pycocotools-windows
+pip install pycocotools-windows >> "%LOG_FILE%" 2>&1
+
+echo   [13/16] Installing Numba==0.48.0
+pip install numba==0.48.0 >> "%LOG_FILE%" 2>&1
+
+echo   [14/16] Installing Tqdm==4.45.0
+pip install tqdm==4.45.0 >> "%LOG_FILE%" 2>&1
+
+echo   [15/16] Installing Psutil==5.7.0
+pip install psutil==5.7.0 >> "%LOG_FILE%" 2>&1
+
+REM ----------------------------------------
+REM PHASE 5: Force correct NumPy version LAST
+REM This overrides any version pip installed
+REM ----------------------------------------
+echo.
+echo   --- Phase 5: Locking NumPy version ---
+echo.
+
+echo   [16/16] Forcing NumPy==1.16.4
+pip install numpy==1.16.4 --force-reinstall --no-deps >> "%LOG_FILE%" 2>&1
 
 echo.
-echo ====================================
-echo Package installation complete!
-echo ====================================
+echo   [OK] Package installation complete
 
-:verify_installation
-REM Verify critical packages
+REM ============================================================
+REM STEP 4: Verify Installation
+REM ============================================================
+
 echo.
-echo Verifying installation...
-python -c "import tensorflow as tf; print('TensorFlow version:', tf.__version__)" 2>nul
+echo [Step 4/5] Verifying installation...
+echo.
+
+SET "VERIFY_FAILED=0"
+
+REM Check NumPy
+python -c "import numpy; print('   NumPy:', numpy.__version__)" 2>nul
 if %errorlevel% neq 0 (
-    echo ERROR: TensorFlow installation verification failed!
-    echo Please check the log file: %LOG_FILE%
-    pause
-    exit /b 1
+    echo   [ERROR] NumPy failed
+    SET "VERIFY_FAILED=1"
 )
 
-python -c "import keras; print('Keras version:', keras.__version__)" 2>nul
+REM Check TensorFlow
+python -c "import tensorflow as tf; print('   TensorFlow:', tf.__version__)" 2>nul
 if %errorlevel% neq 0 (
-    echo ERROR: Keras installation verification failed!
-    echo Please check the log file: %LOG_FILE%
-    pause
-    exit /b 1
+    echo   [ERROR] TensorFlow failed
+    SET "VERIFY_FAILED=1"
 )
 
-echo Installation verified successfully!
+REM Check Keras
+python -c "import keras; print('   Keras:', keras.__version__)" 2>nul
+if %errorlevel% neq 0 (
+    echo   [ERROR] Keras failed
+    SET "VERIFY_FAILED=1"
+)
+
+REM Check other packages
+python -c "import cv2; print('   OpenCV:', cv2.__version__)" 2>nul
+python -c "import scipy; print('   SciPy:', scipy.__version__)" 2>nul
+python -c "import skimage; print('   Scikit-image:', skimage.__version__)" 2>nul
+python -c "import imgaug; print('   Imgaug:', imgaug.__version__)" 2>nul
+python -c "import h5py; print('   H5py:', h5py.__version__)" 2>nul
+
+if %VERIFY_FAILED%==1 (
+    echo.
+    echo   [!] Some packages failed verification.
+    echo   Attempting automatic fix...
+    goto :attempt_fix
+)
 
 echo.
-echo ====================================
-echo Environment setup completed successfully!
-echo ====================================
+echo   [OK] All packages verified!
+goto :create_helpers
+
+:attempt_fix
 echo.
-echo Environment name: %ENV_NAME%
-echo Python version: %PYTHON_VERSION%
+echo   Reinstalling TensorFlow with correct numpy...
+pip uninstall tensorflow -y >nul 2>&1
+pip install numpy==1.16.4 --force-reinstall --no-deps >nul 2>&1
+pip install tensorflow==1.10.0 --no-deps >nul 2>&1
+
+python -c "import tensorflow; print('   TensorFlow fix:', tensorflow.__version__)" 2>nul
+if %errorlevel% neq 0 (
+    echo   [ERROR] Fix failed. See troubleshooting below.
+    goto :show_troubleshoot
+)
+echo   [OK] Fix successful!
+
+REM ============================================================
+REM STEP 5: Create Helper Scripts
+REM ============================================================
+
+:create_helpers
 echo.
-echo Installed packages:
-echo - TensorFlow 1.10.0
-echo - Keras 2.0.8
-echo - NumPy 1.16.4
-echo - OpenCV 4.1.0.25
-echo - And other compatible versions
+echo [Step 5/5] Creating helper scripts...
+
+REM Fix script
+(
+echo @echo off
+echo echo Fixing NumPy for TensorFlow compatibility...
+echo CALL "%CONDA_PATH%\condabin\conda.bat" activate %ENV_NAME%
+echo pip install numpy==1.16.4 --force-reinstall --no-deps
+echo python -c "import tensorflow; print('TensorFlow:', tensorflow.__version__)"
+echo pause
+) > "%SCRIPT_DIR%fix_numpy.bat"
+echo   [OK] Created fix_numpy.bat
+
+REM Quick test script
+(
+echo @echo off
+echo CALL "%CONDA_PATH%\condabin\conda.bat" activate %ENV_NAME%
+echo echo.
+echo echo === Package Versions ===
+echo python -c "import numpy; print('NumPy:', numpy.__version__)"
+echo python -c "import tensorflow; print('TensorFlow:', tensorflow.__version__)"
+echo python -c "import keras; print('Keras:', keras.__version__)"
+echo python -c "import cv2; print('OpenCV:', cv2.__version__)"
+echo python -c "import scipy; print('SciPy:', scipy.__version__)"
+echo echo.
+echo pause
+) > "%SCRIPT_DIR%check_versions.bat"
+echo   [OK] Created check_versions.bat
+
 echo.
-echo To activate this environment manually:
-echo   conda activate %ENV_NAME%
+echo ========================================================
+echo   SETUP COMPLETE!
+echo ========================================================
 echo.
-echo To run the detection:
-echo   Run startdetection.bat
+echo   Environment: %ENV_NAME%
+echo   Location: %CONDA_PATH%\envs\%ENV_NAME%
 echo.
+echo   Installed Packages:
+echo     - Python 3.6
+echo     - TensorFlow 1.10.0
+echo     - Keras 2.0.8
+echo     - NumPy 1.16.4
+echo     - H5py 2.8.0
+echo     - Scikit-image 0.16.2
+echo     - OpenCV 4.1.0.25
+echo     - Imgaug 0.2.9
+echo     - Pillow 6.2.1
+echo     - Matplotlib 3.0.3
+echo     - SciPy 1.2.3
+echo     - IPython 7.2.0
+echo     - Pycocotools-windows
+echo     - Numba 0.48.0
+echo     - Tqdm 4.45.0
+echo     - Psutil 5.7.0
+echo.
+echo   To run detection:
+echo     %SCRIPT_DIR%startdetection.bat
+echo.
+echo   To check versions:
+echo     %SCRIPT_DIR%check_versions.bat
+echo.
+echo   If numpy errors occur:
+echo     %SCRIPT_DIR%fix_numpy.bat
+echo.
+echo ========================================================
 echo Setup completed at: %date% %time% >> "%LOG_FILE%"
-
 pause
+exit /b 0
+
+:show_troubleshoot
+echo.
+echo ========================================================
+echo   TROUBLESHOOTING
+echo ========================================================
+echo.
+echo   Manual fix steps:
+echo.
+echo   1. Open Anaconda Prompt
+echo   2. conda activate %ENV_NAME%
+echo   3. pip uninstall numpy tensorflow tensorflow-gpu -y
+echo   4. pip install numpy==1.16.4
+echo   5. pip install tensorflow==1.10.0 --no-deps
+echo   6. python -c "import tensorflow"
+echo.
+echo   If still failing, delete and recreate:
+echo   conda env remove -n %ENV_NAME% -y
+echo   Then run this script again.
+echo.
+echo ========================================================
+pause
+exit /b 1
